@@ -62,7 +62,7 @@ jobs:
               echo "Marking latest"
               TAGS="${img_path_ghcr}:${base_tag}, ${img_path_ghcr}:latest-cpu"
           else
-              TAGS="${img_path_ghcr}:${base_tag}
+              TAGS="${img_path_ghcr}:${base_tag}"
           fi
           echo "TAGS=${TAGS}" >> ${GITHUB_ENV}
       -
@@ -138,7 +138,7 @@ jobs:
               echo "Marking latest"
               TAGS="${img_path_ghcr}:${base_tag}, ${img_path_ghcr}:latest-cuda"
           else
-              TAGS="${img_path_ghcr}:${base_tag}
+              TAGS="${img_path_ghcr}:${base_tag}"
           fi
           echo "TAGS=${TAGS}" >> ${GITHUB_ENV}
       -
@@ -208,7 +208,7 @@ jobs:
               echo "Marking latest"
               TAGS="${img_path_ghcr}:${base_tag}, ${img_path_ghcr}:latest-rocm"
           else
-              TAGS="${img_path_ghcr}:${base_tag}
+              TAGS="${img_path_ghcr}:${base_tag}"
           fi
           echo "TAGS=${TAGS}" >> ${GITHUB_ENV}
       -
