@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 trap init_cleanup EXIT
 
 function init_cleanup() {
@@ -59,9 +61,9 @@ function init_set_envs() {
             fi
         fi
     done
-    
+
     # TODO: This does not handle cases where the tcp and udp port are both opened
-    # Re-write envs; 
+    # Re-write envs;
     ## 1) Strip quotes & replace ___ with a space
     ## 2) re-write cloud out-of-band ports
     while IFS='=' read -r -d '' key val; do
@@ -86,19 +88,19 @@ function init_set_ssh_keys() {
     if [[ -f "/root/.ssh/authorized_keys_mount" ]]; then
         cat /root/.ssh/authorized_keys_mount > /root/.ssh/authorized_keys
     fi
-    
+
     # Named to avoid conflict with the cloud providers below
-    
+
     if [[ -n $SSH_PUBKEY ]]; then
         printf "\n%s\n" "$SSH_PUBKEY" > /root/.ssh/authorized_keys
     fi
-    
+
     # Alt names for $SSH_PUBKEY
     # runpod.io
     if [[ -n $PUBLIC_KEY ]]; then
         printf "\n%s\n" "$PUBLIC_KEY" > /root/.ssh/authorized_keys
     fi
-    
+
     # vast.ai
     if [[ -n $SSH_PUBLIC_KEY ]]; then
         printf "\n%s\n" "$SSH_PUBLIC_KEY" > /root/.ssh/authorized_keys
@@ -107,7 +109,7 @@ function init_set_ssh_keys() {
 
 init_set_web_config() {
   # Handle cloud provider auto login
-  
+
   if [[ -z $CADDY_AUTH_COOKIE_NAME ]]; then
       export CADDY_AUTH_COOKIE_NAME=ai_dock_$(echo $RANDOM | md5sum | head -c 8)_token
   fi
@@ -127,7 +129,7 @@ init_set_web_config() {
       ln -sf /etc/instance.crt /opt/caddy/tls/container.crt
       ln -sf /etc/instance.key /opt/caddy/tls/container.key
   fi
-  
+
   if [[ -z $WEB_USER ]]; then
       export WEB_USER=user
   fi
@@ -135,9 +137,9 @@ init_set_web_config() {
   if [[ -z $WEB_PASSWORD ]]; then
       export WEB_PASSWORD="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)"
   fi
-  
+
   export WEB_PASSWORD_B64="$(caddy hash-password -p $WEB_PASSWORD)"
-  
+
   if [[ -z $WEB_TOKEN ]]; then
       export WEB_TOKEN="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
   fi
@@ -180,7 +182,7 @@ function init_set_workspace() {
         ws_tmp="/$WORKSPACE/"
         export WORKSPACE=${ws_tmp//\/\//\/}
     fi
-    
+
     WORKSPACE_UID=$(stat -c '%u' "$WORKSPACE")
     if [[ $WORKSPACE_UID -eq 0 ]]; then
         WORKSPACE_UID=1000
@@ -191,7 +193,7 @@ function init_set_workspace() {
         WORKSPACE_GID=1000
     fi
     export WORKSPACE_GID
-    
+
     if [[ -f "${WORKSPACE}".update_lock ]]; then
         export AUTO_UPDATE=false
     fi
@@ -201,7 +203,7 @@ function init_set_workspace() {
         chown ${WORKSPACE_UID}.${WORKSPACE_GID} "${WORKSPACE}"
         chmod g+s "${WORKSPACE}"
     fi
-    
+
     # Determine workspace mount status
     if mountpoint "$WORKSPACE" > /dev/null 2>&1 || [[ $WORKSPACE_MOUNTED == "force" ]]; then
         export WORKSPACE_MOUNTED=true
@@ -225,7 +227,7 @@ function init_set_workspace() {
         touch $test_file
         if chown ${WORKSPACE_UID}.${WORKSPACE_GID} $test_file > /dev/null 2>&1; then
             export WORKSPACE_PERMISSIONS=true
-        else 
+        else
             export WORKSPACE_PERMISSIONS=false
         fi
         rm $test_file
@@ -279,7 +281,7 @@ function init_create_user() {
         fi
     fi
     # Set username in startup sctipts
-    sed -i "s/\$USER_NAME/$USER_NAME/g" /etc/supervisor/supervisord/conf.d/* 
+    sed -i "s/\$USER_NAME/$USER_NAME/g" /etc/supervisor/supervisord/conf.d/*
 }
 
 init_sync_opt() {
@@ -292,30 +294,30 @@ init_sync_opt() {
             if [[ ! -d $opt_dir || $opt_dir = "/opt/" || $opt_dir = "/opt/ai-dock" ]]; then
                 continue
             fi
-            
+
             ws_dir="${WORKSPACE}${item}"
             archive="${item}.tar"
 
             # remove old backup links (depreciated)
             rm -f "${ws_dir}-link"
-            
+
             # Restarting stopped container
             if [[ -d $ws_dir && -L $opt_dir ]]; then
                 printf "%s already symlinked to %s\n" $opt_dir $ws_dir
                 continue
             fi
-            
+
             # Reset symlinks first
             if [[ -L $opt_dir ]]; then rm -f "$opt_dir"; fi
             if [[ -L $ws_dir ]]; then rm -f "$ws_dir"; fi
-            
+
             # Sanity check
             # User broke something - Container requires tear-down & restart
             if [[ ! -d $opt_dir && ! -d $ws_dir ]]; then
                 printf "\U274C Critical directory ${opt_dir} is missing without a backup!\n"
                 continue
             fi
-            
+
             # Copy & delete directories
             # Found a Successfully copied directory
             if [[ -d $ws_dir && -f $ws_dir/.move_complete ]]; then
@@ -340,7 +342,7 @@ init_sync_opt() {
                 printf "Moved %s to %s\n" "$opt_dir" "$ws_dir"
                 printf 1 > $ws_dir/.move_complete
             fi
-            
+
             # Create symlinks
             # Use workspace version
             if [[ -f "${ws_dir}/.move_complete" ]]; then
@@ -371,7 +373,7 @@ function init_toggle_supervisor_autostart() {
 
 function init_create_directories() {
     mkdir -m 2770 -p /run/http_ports
-    chown root.ai-dock /run/http_ports
+    chown -R root:ai-dock /run/http_ports
     mkdir -p /opt/caddy/etc
 }
 
@@ -410,7 +412,7 @@ function init_write_environment() {
             printf '    source "$VENV_DIR/$PYTHON_DEFAULT_VENV/bin/activate"\n' >> /root/.bashrc
             printf 'fi\n' >> /root/.bashrc
         fi
-        
+
         printf "cd %s\n" "$WORKSPACE" >> /root/.bashrc
         ln -snf "/usr/share/zoneinfo/$TZ" /etc/localtime && echo "$TZ" | sudo tee /etc/timezone > /dev/null
     fi

@@ -1,7 +1,9 @@
 #!/bin/false
 
+set -x
+
 groupadd -g 1111 ai-dock
-chown root.ai-dock /opt
+chown -R root:ai-dock /opt
 chmod g+w /opt
 chmod g+s /opt
 
@@ -43,14 +45,14 @@ $APT_INSTALL \
     less \
     libcap2-bin \
     libelf1 \
-    libgl1-mesa-glx \
+    libgl1 libglx-mesa0 \
     libglib2.0-0 \
     libtcmalloc-minimal4 \
     locales \
     lsb-release \
     lsof \
     man \
-    mlocate \
+    plocate \
     net-tools \
     nano \
     openssh-server \
@@ -78,18 +80,18 @@ $APT_INSTALL \
     xz-utils \
     zip \
     zstd
-    
+
 ln -sf $(ldconfig -p | grep -Po "libtcmalloc_minimal.so.\d" | head -n 1) \
         /lib/x86_64-linux-gnu/libtcmalloc.so
 
 # Ensure deadsnakes is available for Python versions not included with base distribution
 add-apt-repository ppa:deadsnakes/ppa
 apt update
-  
+
 locale-gen en_US.UTF-8
 
-# Install 
-python3.10 -m venv "$SERVICEPORTAL_VENV"
+# Install
+python3.12 -m venv "$SERVICEPORTAL_VENV"
 "$SERVICEPORTAL_VENV_PIP" install \
     --no-cache-dir -r /opt/ai-dock/fastapi/requirements.txt
 
@@ -111,7 +113,7 @@ rm -f /etc/update-motd.d/10-help-text
 # Ensure critical paths/files are present
 mkdir -p --mode=0755 /etc/apt/keyrings
 mkdir -p --mode=0755 /run/sshd
-chown -R root.ai-dock /var/log
+chown -R root:ai-dock /var/log
 chmod -R g+w /var/log
 chmod -R g+s /var/log
 mkdir -p /var/log/supervisor

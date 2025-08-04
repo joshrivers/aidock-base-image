@@ -1,5 +1,7 @@
 #!/bin/false
 
+set -x
+
 if [[ -z $CUDA_STRING ]]; then
     printf "No valid CUDA_STRING specified\n" >&2
     exit 1
