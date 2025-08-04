@@ -28,7 +28,7 @@ function fix_container() {
     find /opt -type d ! -perm -g=w -exec chmod g+w {} \;
     # See above - Remember this is overlayfs so touch as little as possible
     find /opt -not -group ai-dock -exec chown -R root:ai-dock {} \;
-    chown -R root.root /root
+    chown -R root:root /root
     printf "Container file permissions reset\n"
 }
 
@@ -39,7 +39,7 @@ function fix_workspace() {
         chmod g+w "${WORKSPACE}"
         chmod g+s "${WORKSPACE}"
         find "${WORKSPACE}" -type d ! -perm -g=s -exec chmod g+s {} \;
-        find "${WORKSPACE}" ! -uid "${WORKSPACE_UID}" -exec chown "${WORKSPACE_UID}.${WORKSPACE_GID}" {} \;
+        find "${WORKSPACE}" ! -uid "${WORKSPACE_UID}" -exec chown "${WORKSPACE_UID}:${WORKSPACE_GID}" {} \;
         chmod o-rw "${WORKSPACE}/home/${USER_NAME}"
         if [[ -e ${WORKSPACE}/home/user/.ssh/authorized_keys ]]; then
             chmod 700 "${WORKSPACE}/home/${USER_NAME}/.ssh"
